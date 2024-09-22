@@ -3,7 +3,7 @@ ember-template-imports
 
 This addon provides the build tooling required to support Ember's next-gen component authoring format:
 
-```js
+```gjs
 import { on } from '@ember/modifier';
 import FancyButton from './fancy-button';
 
@@ -56,7 +56,7 @@ Install this package and [the supporting Prettier plugin][prettier-plugin]:
 
 Then configure the Prettier plugin following [the instructions from its
 README][prettier-plugin]. Additionally, make sure you are using at least v5.8.0
-of [ember-template-lint][etl] and v of [eslint-plugin-ember][epe], so your
+of [ember-template-lint][etl] and v11.6.0 of [eslint-plugin-ember][epe], so your
 linting tools will work correctly.
 
 [etl]: https://github.com/ember-template-lint/ember-template-lint
@@ -73,8 +73,8 @@ include `@glint/environment-ember-template-imports`!)
 ## Compatibility
 
 * Ember.js v3.27 or above
-* Ember CLI v2.13 or above
-* `ember-cli-htmlbars` 6.0 or above
+* Ember CLI v3.27 or above
+* `ember-cli-htmlbars` 6.3.0 or above
 * Node.js v12 or above
 
 
@@ -85,7 +85,7 @@ file extension, you may need to configure your editor.
 
 ### Visual Studio Code
 
-The [vscode-glimmer](https://marketplace.visualstudio.com/items?itemName=chiragpat.vscode-glimmer) plugin handles syntax highlighting for both proposed formats.
+The [Ember.js extension pack](https://marketplace.visualstudio.com/items?itemName=EmberTooling.emberjs) bundles everything you need to get started.
 
 
 ### Neovim
@@ -143,7 +143,7 @@ syntax, templates are defined in JavaScript files directly.
 This example defines a template-only component, which is the default export of
 `hello.gjs`:
 
-```js
+```gjs
 // components/hello.gjs
 <template>
   <span>Hello, {{@name}}!</span>
@@ -152,7 +152,7 @@ This example defines a template-only component, which is the default export of
 
 You would be able to use this component in another component like so:
 
-```js
+```gjs
 // components/hello-world.gjs
 import Hello from './hello';
 
@@ -163,7 +163,7 @@ import Hello from './hello';
 
 You can also export the component explicitly:
 
-```js
+```gjs
 // components/hello.gjs
 export default <template>
   <span>Hello, {{@name}}!</span>
@@ -174,7 +174,7 @@ Omitting the `export default` is just syntactic sugar. In addition, you can
 define template-only components and assign them to variables, allowing you to
 export components with named exports:
 
-```js
+```gjs
 export const First = <template>First</template>;
 
 export const Second = <template>Second</template>;
@@ -185,7 +185,7 @@ export const Third = <template>Third</template>;
 This also allows you to create components that are only used locally, in the
 same file:
 
-```js
+```gjs
 const Option = <template>
   <option selected={{@selected}} value={{@value}}>
     {{or @title @value}}
@@ -207,7 +207,7 @@ export const CustomSelect = <template>
 Helpers and modifiers can also be defined in the same file as your components,
 making them very flexible:
 
-```js
+```gjs
 import { modifier } from 'ember-modifier';
 
 const plusOne = (num) => num + 1;
@@ -228,13 +228,13 @@ const setScrollPosition = modifier((element, [position]) => {
 Finally, to associate a template with a class-based component, you can use the
 template syntax directly in the class body:
 
-```js
+```gjs
 import Component from '@glimmer/component';
 import { tracked } from '@glimmer/tracking';
 import { on } from '@ember/modifier';
 
 // components/hello.gjs
-export default class Hello {
+export default class Hello extends Component {
   @tracked count = 0;
 
   increment = () => {
@@ -253,6 +253,42 @@ export default class Hello {
 }
 ```
 
+Template tag components can also be used for writing tests. In fact, this aligned syntax between app code and test code is one of the big advantages of the new authoring format.
+
+Just like in app code, the template tag has access to the outer scope. This means you can reference variables directly in your tests:
+
+```gjs
+// tests/integration/components/hello-test.gjs
+import Hello from 'example-app/components/hello';
+import { module, test } from 'qunit';
+import { setupRenderingTest } from 'ember-qunit';
+import { render } from '@ember/test-helpers';
+
+module('Integration | Component | hello', function (hooks) {
+  setupRenderingTest(hooks);
+
+  test('renders name argument', async function (assert) {
+    const name = 'world';
+    await render(<template><Hello @name={{name}} /></template>);
+    assert.dom('[data-test-id="some-selector"]').hasText(name);
+  });
+});
+
+```
+
+## Sourcemap Generation
+
+This can be useful for development and test purposes, it should be disabled for production
+
+```js
+// ember-cli-build.js
+module.exports = function (defaults) {
+  let app = new EmberAddon(defaults, {
+    'ember-template-imports': {
+      inline_source_map: true
+    }
+  });
+```
 
 ## Reference: built-in helpers, modifiers, components
 
@@ -271,6 +307,31 @@ helpers, modifiers and components are available for import:
 
 [rfc-496]: https://github.com/emberjs/rfcs/pull/496
 
+## Reference: import external helpers, modifiers, components
+
+You can import non `.gjs/.gts` helpers, modifiers and components from apps/addons
+you may already be using when migrating your own components. To determine 
+the import path:
+
+1. Check the app
+   1. If found, import that
+   2. If not found,
+        1. Check all addon's app folders
+            1. When found, look in the matching file to see what the re-export is -- this is what you can use in your app
+        2. Check all v2-addon's ember-addon#app-js configs in package.json
+            1. When found, look in the matching file to see what the re-export is -- this is what you can use in
+
+For example:
+
+```gjs
+import BasicDropdown from 'ember-basic-dropdown/components/basic-dropdown';
+
+<template>
+  <BasicDropdown>
+   <!-- Your component implementation here -->
+  </BasicDropdown>
+</template>
+```
 
 ## History
 
@@ -284,7 +345,7 @@ solutions, and work together as a community as we explored the design space.
 The main alternative explored in a previous version was template literals,
 similar to the existing `hbs` helper in tests:
 
-```js
+```gjs
 import { hbs } from 'ember-template-imports';
 import MyComponent from './my-component';
 
@@ -298,7 +359,7 @@ huge thanks to @patricklx for his contributions here!
 
 [first-repo]: https://github.com/patricklx/ember-template-imports
 
-As of [RFC 0779][rfc-0779], we decided on `<template>` over `hbs`; see the RFC for the full rationale. The `hbs` format is still technically supported by this repo for transition purposes for the early adopters who helped us get here, but will be removed at some point in the near future!
+As of [RFC 0779][rfc-0779], we decided on `<template>` over `hbs`; see the RFC for the full rationale. ~~The `hbs` format is still technically supported by this repo for transition purposes for the early adopters who helped us get here, but will be removed at some point in the near future!~~ `hbs` has been removed -- if you rely on this feature, please use `ember-template-imports @ < v4`, until migrated to `<template>`
 
 
 ## Contributing

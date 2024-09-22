@@ -16,18 +16,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v4
+      - uses: wyvox/action-setup-pnpm@v3
         with:
           node-version: 16.x
-      - name: install dependencies
-        run: yarn install
-      - name: build
-        run: yarn build
       - name: lint:js
-        run: yarn lint:js
-      - name: lint:hbs
-        run: yarn lint:hbs
+        run: pnpm lint:js
 
   # Basic tests; we can trigger parallel runs of *everything else* iff this
   # passes.
@@ -36,19 +30,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: wyvox/action-setup-pnpm@v3
         with:
           node-version: 16.x
-      - name: install dependencies
-        # Dependency fetching in Windows Actions runners can be slow
-        run: yarn install --network-timeout 60000
-      - name: build
-        run: yarn build
-      - name: jest
-        run: yarn test:jest
       - name: ember test
-        run: yarn test:ember
+        run: pnpm test:ember
 
   # For example: don't bother with *other* Node version tests unless the base
   # case passes!
@@ -60,22 +47,15 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [16.x, 18.x]
+        node-version: [16.x, 18.18.1]
 
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: wyvox/action-setup-pnpm@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - name: install dependencies
-        # Dependency fetching in Windows Actions runners can be slow
-        run: yarn install --network-timeout 60000
-      - name: build
-        run: yarn build
-      - name: jest
-        run: yarn test:jest
       - name: ember test
-        run: yarn test:ember
+        run: pnpm test:ember
 
   # macOS and Windows can run after we clear ubuntu (don't bother otherwise)
   test-other-os:
@@ -89,19 +69,12 @@ jobs:
         os: [macos, windows]
 
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: wyvox/action-setup-pnpm@v3
         with:
           node-version: 16.x
-      - name: install dependencies
-        # Dependency fetching in Windows Actions runners can be slow
-        run: yarn install --network-timeout 60000
-      - name: build
-        run: yarn build
-      - name: jest
-        run: yarn test:jest
       - name: ember test
-        run: yarn test:ember
+        run: pnpm test:ember
 
   # floating deps likewise are only gated on ubuntu tests passing
   floating-dependencies:
@@ -111,18 +84,12 @@ jobs:
     needs: [test, lint]
 
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: wyvox/action-setup-pnpm@v3
         with:
           node-version: 16.x
-      - name: install dependencies
-        run: yarn install --ignore-lockfile
-      - name: build
-        run: yarn build
-      - name: jest
-        run: yarn test:jest
       - name: ember test
-        run: yarn test:ember
+        run: pnpm test:ember
 
   # as are other compatibility scenarios
   try-scenarios:
@@ -136,21 +103,20 @@ jobs:
       matrix:
         ember-try-scenario:
           - ember-3.27
+          - ember-4.12
           - ember-release
           - ember-beta
           - ember-canary
-          - embroider-safe
-          - embroider-optimized
+          - embroider-safe-min-supported
+          - embroider-optimized-min-supported
+          - embroider-safe-release
+          - embroider-optimized-release
 
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: wyvox/action-setup-pnpm@v3
         with:
           node-version: 16.x
-      - name: install dependencies
-        run: yarn install
-      - name: build
-        run: yarn build
       - name: test
         env:
           EMBER_TRY_SCENARIO: ${{ matrix.ember-try-scenario }}
